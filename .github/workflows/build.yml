@@ -1,6 +1,6 @@
 # Builds the desktop app and the Android app on every push / pull request.
 # Produces: Linux .deb, Windows .zip, macOS (Apple Silicon) .dmg and Android APKs, as artifacts of the run.
-# On tags, the Android APK is attached to the GitHub release (desktop installers for releases are built by release-*.yml).
+# On a tag (equal to app.version in gradle.properties, e.g. 1.7.0-beta3), all of them are attached to a GitHub release.
 
 name: Build desktop & Android
 
@@ -44,7 +44,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Read version
-        run: echo "VERSION=$(awk -F'=' '/^app.version/ {print $2}' gradle.properties | tr -d '\r')" >> "$GITHUB_ENV"
+        run: |
+          VERSION=$(awk -F'=' '/^app.version/ {print $2}' gradle.properties | tr -d '\r')
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "$VERSION" ]]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match app.version $VERSION in gradle.properties"
+            exit 1
+          fi
 
       - name: Package (Linux .deb)
         if: matrix.name == 'linux'
@@ -75,6 +81,13 @@ jobs:
         with:
           name: vlabeler-desktop-${{ matrix.name }}
           path: dist/*
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: dist/*
 
   android:
     runs-on: ubuntu-latest
@@ -136,5 +149,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: dist/vlabeler-*-android.apk
