@@ -18,10 +18,10 @@ jobs:
   desktop:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'corretto'
@@ -46,16 +46,24 @@ jobs:
   android:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
 
+      # GitHub-hosted Ubuntu runners already have the Android SDK (ANDROID_HOME). The action is only needed on
+      # runners without it, so a failure there must not stop the build.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        continue-on-error: true
+
+      - name: Check Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -d "$ANDROID_HOME" || { echo "::error::Android SDK not found"; exit 1; }
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
