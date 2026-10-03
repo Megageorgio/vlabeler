@@ -1,5 +1,6 @@
 # Builds the desktop app and the Android app on every push / pull request.
-# On tags, the Android APK is attached to the GitHub release (desktop installers are built by release-*.yml).
+# Produces: Linux .deb, Windows .zip, macOS (Apple Silicon) .dmg and Android APKs, as artifacts of the run.
+# On tags, the Android APK is attached to the GitHub release (desktop installers for releases are built by release-*.yml).
 
 name: Build desktop & Android
 
@@ -16,7 +17,20 @@ permissions:
 
 jobs:
   desktop:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+          - os: windows-latest
+            name: windows
+          - os: macos-latest
+            name: mac-arm64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v5
 
@@ -29,19 +43,38 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build desktop
+      - name: Read version
+        run: echo "VERSION=$(awk -F'=' '/^app.version/ {print $2}' gradle.properties | tr -d '\r')" >> "$GITHUB_ENV"
+
+      - name: Package (Linux .deb)
+        if: matrix.name == 'linux'
         run: |
           chmod +x gradlew
-          ./gradlew build
+          ./gradlew packageDeb
+          mkdir -p dist
+          cp build/compose/binaries/main/deb/*.deb "dist/vlabeler-$VERSION-amd64.deb"
 
-      - name: Package desktop (Linux .deb)
-        run: ./gradlew packageDeb
+      - name: Package (Windows .zip)
+        if: matrix.name == 'windows'
+        run: |
+          ./gradlew createDistributable
+          mkdir -p dist
+          pwsh -Command "Compress-Archive ./build/compose/binaries/main/app/vLabeler/* ./dist/vlabeler-$VERSION-win64.zip"
+
+      # Not signed / notarized: on first launch use right click -> Open (or allow it in Privacy & Security)
+      - name: Package (macOS .dmg)
+        if: matrix.name == 'mac-arm64'
+        run: |
+          chmod +x gradlew
+          ./gradlew packageDmg
+          mkdir -p dist
+          cp build/compose/binaries/main/dmg/*.dmg "dist/vlabeler-$VERSION-mac-arm64.dmg"
 
       - name: Upload desktop package
         uses: actions/upload-artifact@v4
         with:
-          name: vlabeler-desktop-linux
-          path: build/compose/binaries/main/deb/*.deb
+          name: vlabeler-desktop-${{ matrix.name }}
+          path: dist/*
 
   android:
     runs-on: ubuntu-latest

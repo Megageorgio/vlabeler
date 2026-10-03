@@ -19,9 +19,10 @@ Release-сборка подписывается debug-ключом, если н�
 
 ## Сборка на GitHub (desktop + Android)
 
-Workflow `.github/workflows/build.yml` на каждый push/PR собирает desktop-версию (`./gradlew build` + `.deb`) и
-Android (`assembleRelease`, `assembleDebug`); результаты — в Artifacts запуска. На тегах APK прикладывается к релизу
-(desktop-установщики, как и раньше, собирают `release-*.yml`).
+Workflow `.github/workflows/build.yml` на каждый push/PR собирает все версии: Linux (`.deb`), Windows (`.zip`),
+macOS Apple Silicon (`.dmg`, без подписи — при первом запуске «Открыть» через правый клик) и Android (release и debug
+APK); результаты — в Artifacts запуска. На тегах APK прикладывается к релизу (desktop-установщики для релиза, как и
+раньше, собирают `release-*.yml`; для macOS там нужны секреты подписи Apple).
 
 Чтобы APK из CI обновлялись поверх друг друга, подпишите их своим ключом. Создайте ключ один раз:
 
