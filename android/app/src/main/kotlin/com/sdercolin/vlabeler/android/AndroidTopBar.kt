@@ -44,6 +44,10 @@ import com.sdercolin.vlabeler.android.menu.AndroidMenuModel
 import com.sdercolin.vlabeler.model.action.KeyAction
 import com.sdercolin.vlabeler.model.key.Key
 import com.sdercolin.vlabeler.ui.AppState
+import com.sdercolin.vlabeler.ui.editor.Tool
+import com.sdercolin.vlabeler.ui.string.string
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import com.sdercolin.vlabeler.util.getNullableOrElse
 
 /**
@@ -113,6 +117,13 @@ private fun RowScope.EditorToolbar(appState: AppState) {
             appState.performKeyAction(KeyAction.Redo)
         }
         ToolbarDivider()
+        val editor = appState.editor
+        if (editor != null) {
+            Tool.entries.forEach { tool ->
+                ToolButton(tool, selected = editor.tool == tool) { editor.tool = tool }
+            }
+            ToolbarDivider()
+        }
         ToolbarButton(Icons.Default.KeyboardArrowUp, "Previous entry") {
             appState.performKeyAction(KeyAction.NavigatePreviousEntry)
         }
@@ -149,6 +160,27 @@ private fun RowScope.EditorToolbar(appState: AppState) {
 private fun ToolbarButton(icon: ImageVector, description: String, enabled: Boolean = true, onClick: () -> Unit) {
     IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(44.dp)) {
         Icon(icon, contentDescription = description)
+    }
+}
+
+@Composable
+private fun ToolButton(tool: Tool, selected: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colors
+    Box(
+        Modifier
+            .padding(horizontal = 2.dp)
+            .size(40.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (selected) colors.onSurface.copy(alpha = 0.16f) else Color.Transparent)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            tool.icon,
+            contentDescription = string(tool.stringKey),
+            modifier = Modifier.size(22.dp).rotate(tool.iconRotate),
+            tint = if (selected) colors.primary else colors.onSurface,
+        )
     }
 }
 

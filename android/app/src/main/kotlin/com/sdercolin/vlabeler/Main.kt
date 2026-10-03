@@ -6,7 +6,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.displayCutoutPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Snackbar
 import androidx.compose.material.SnackbarHost
@@ -127,7 +128,7 @@ fun VLabelerApp(args: List<String>, exitApplication: () -> Unit) {
     CompositionLocalProvider(UseCustomFileDialog.provides(true)) {
         AppTheme(appConf.value.view) {
           ProvideAppUiScale {
-            Box(Modifier.fillMaxSize().background(MaterialTheme.colors.background).safeDrawingPadding()) {
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colors.background).displayCutoutPadding().imePadding()) {
                 Column(Modifier.fillMaxSize()) {
                     AndroidTopBar(appState, title)
                     Box(Modifier.fillMaxWidth().weight(1f)) {

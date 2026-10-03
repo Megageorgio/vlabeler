@@ -9,6 +9,9 @@ import android.provider.Settings
 import android.view.KeyEvent
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +48,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enterFullscreen()
         AndroidPlatform.init(this)
         AndroidPlatform.attachActivity(this)
         AndroidUiScale.load(this)
@@ -105,6 +109,23 @@ class MainActivity : ComponentActivity() {
 
     private fun onPermissionResult() {
         if (AndroidPlatform.hasAllFilesAccess) showApp = true
+    }
+
+    /**
+     * Full screen: the app draws behind the system bars, which are hidden and can be shown temporarily by a swipe from
+     * the screen edge.
+     */
+    private fun enterFullscreen() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) enterFullscreen()
     }
 
     override fun onResume() {
