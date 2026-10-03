@@ -203,9 +203,10 @@ private fun Scrollbar(
         val trackLength = with(density) { (if (isVertical) maxHeight else maxWidth).toPx() }
         val contentSize = adapter.contentSize
         val viewportSize = adapter.viewportSize
-        val visible = contentSize > viewportSize && contentSize > 0.0 && trackLength > 0f
+        val visible = contentSize > viewportSize && contentSize > 0.0 && trackLength > 0f && trackLength.isFinite()
         if (visible) {
-            val minThumb = with(density) { style.minimalHeight.toPx() }
+            // the track can be shorter than the minimal thumb (e.g. when the on-screen keyboard is shown)
+            val minThumb = with(density) { style.minimalHeight.toPx() }.coerceAtMost(trackLength)
             val thumbLength = (trackLength * viewportSize / contentSize).toFloat().coerceIn(minThumb, trackLength)
             val maxScroll = (contentSize - viewportSize).coerceAtLeast(1.0)
             val thumbOffsetRatio by remember(adapter, maxScroll) { derivedStateOf { adapter.scrollOffset / maxScroll } }
