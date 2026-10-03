@@ -1,0 +1,99 @@
+# Builds the desktop app and the Android app on every push / pull request.
+# On tags, the Android APK is attached to the GitHub release (desktop installers are built by release-*.yml).
+
+name: Build desktop & Android
+
+on:
+  push:
+    branches: [ main, dev, 'android-*' ]
+    tags: [ "*" ]
+  pull_request:
+    branches: [ main, dev ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'corretto'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build desktop
+        run: |
+          chmod +x gradlew
+          ./gradlew build
+
+      - name: Package desktop (Linux .deb)
+        run: ./gradlew packageDeb
+
+      - name: Upload desktop package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vlabeler-desktop-linux
+          path: build/compose/binaries/main/deb/*.deb
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Decode signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+
+      - name: Build APKs
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease assembleDebug
+
+      - name: Rename APKs
+        run: |
+          VERSION=$(awk -F'=' '/^app.version/ {print $2}' gradle.properties)
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/vlabeler-$VERSION-android.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "dist/vlabeler-$VERSION-android-debug.apk"
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: vlabeler-android
+          path: dist/*.apk
+
+      - name: Attach APK to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          files: dist/vlabeler-*-android.apk

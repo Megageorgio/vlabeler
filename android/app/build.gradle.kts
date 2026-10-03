@@ -219,10 +219,30 @@ android {
         }
     }
 
+    // Release signing: set ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and
+    // ANDROID_KEY_PASSWORD (environment variables or Gradle properties) to sign with your own key.
+    // Otherwise the release APK is signed with the debug key (fine for personal use, but each machine/CI run has
+    // a different debug key, so updates over an installed app from another machine will fail).
+    val keystoreFile = providers.environmentVariable("ANDROID_KEYSTORE_FILE")
+        .orElse(providers.gradleProperty("ANDROID_KEYSTORE_FILE")).orNull
+    signingConfigs {
+        if (keystoreFile != null && file(keystoreFile).exists()) {
+            create("release") {
+                storeFile = file(keystoreFile)
+                storePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD")
+                    .orElse(providers.gradleProperty("ANDROID_KEYSTORE_PASSWORD")).orNull
+                keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS")
+                    .orElse(providers.gradleProperty("ANDROID_KEY_ALIAS")).orNull
+                keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD")
+                    .orElse(providers.gradleProperty("ANDROID_KEY_PASSWORD")).orNull
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 
