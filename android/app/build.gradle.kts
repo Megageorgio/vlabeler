@@ -118,6 +118,10 @@ val sharedPatches = mapOf(
         "dialogState.openUpdaterDialog(it)" to
             "com.sdercolin.vlabeler.util.Url.open(com.sdercolin.vlabeler.util.Url.LATEST_RELEASE)",
     ),
+    // Keys of lazy lists are saved in a Bundle on Android, so they must be Bundle-compatible (e.g. String)
+    "ui/dialog/preferences/PreferencesEditor.kt" to listOf(
+        "key = { it.model }," to "key = { it.model.name },",
+    ),
     "repository/FontRepository.kt" to listOf(
         "originalData.readAllBytes()" to "originalData.readBytes()",
     ),
