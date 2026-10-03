@@ -122,6 +122,16 @@ val sharedPatches = mapOf(
     "ui/dialog/preferences/PreferencesEditor.kt" to listOf(
         "key = { it.model }," to "key = { it.model.name },",
     ),
+    // Android's ICU regex engine requires a closing brace outside of a character class to be escaped
+    "ui/string/ClickableTag.kt" to listOf(
+        "\"\"\"@(\\w+)\\{([^}]+)}\"\"\"" to "\"\"\"@(\\w+)\\{([^}]+)\\}\"\"\"",
+    ),
+    "model/LogicalExpression.kt" to listOf(
+        "\"\"\"^\\{\\d+}\"\"\"" to "\"\"\"^\\{\\d+\\}\"\"\"",
+    ),
+    "util/Regex.kt" to listOf(
+        "(?=})" to "(?=\\})",
+    ),
     "repository/FontRepository.kt" to listOf(
         "originalData.readAllBytes()" to "originalData.readBytes()",
     ),
